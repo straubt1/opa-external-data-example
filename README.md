@@ -41,8 +41,8 @@ This repository demonstrates:
 │   ├── data.json            # External data file
 │   └── README.md            # Infrastructure documentation
 ├── policy-set/              # OPA policies (Phase 2 ✅)
-│   ├── policies.hcl         # Sentinel Policy Set configuration
-│   ├── policy/
+│   ├── policies.hcl         # OPA Policy Set configuration
+│   ├── policies/
 │   │   ├── external_data_policy.rego      # Main OPA policy
 │   │   └── external_data_policy_test.rego # Unit tests
 │   ├── test-data/           # Sample test data
@@ -118,28 +118,28 @@ The OPA policy is now ready and tested locally!
 
    ```bash
    cd policy-set
-   ~/bin/opa test policy/ -v
+   ~/bin/opa test policies/ -v
    ```
 
 3. Test with mock data (offline):
 
    ```bash
    ~/bin/opa eval \
-     --data policy/external_data_policy.rego \
+     --data policies/external_data_policy.rego \
      --data test-data/mock-external-data.json \
      --input test-data/passing-input.json \
      --format pretty \
-     'data.terraform.policies.external_data.policy_result'
+     'data.terraform.policies.external_data_policy.deny'
    ```
 
 4. Test with live S3 data:
 
    ```bash
    ~/bin/opa eval \
-     --data policy/external_data_policy.rego \
+     --data policies/external_data_policy.rego \
      --input test-data/passing-input.json \
      --format pretty \
-     'data.terraform.policies.external_data.policy_result'
+     'data.terraform.policies.external_data_policy.deny'
    ```
 
 See [policy-set/README.md](policy-set/README.md) for detailed documentation.
@@ -160,10 +160,9 @@ The test workspace demonstrates both passing and failing scenarios.
 
    ```bash
    cd setup
-   cp terraform.tfvars.example terraform.tfvars
-   # Edit terraform.tfvars with your organization name
+   # Edit variables.tf or use -var flag with your organization name
    terraform init
-   terraform apply
+   terraform apply -var="organization_name=your-org-name"
    ```
 
 #### Test Locally

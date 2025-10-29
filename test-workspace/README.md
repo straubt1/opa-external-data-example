@@ -34,27 +34,32 @@ All resources must have:
 
 ## Test Scenarios
 
-### Scenario 1: Passing Configuration (Default)
+### Scenario 1: Passing Configuration Only
+
+To test only passing resources, you need to comment out or remove the failing example:
 
 ```hcl
-create_passing_example = true
-create_failing_example = false
+# Comment out or remove aws_instance.failing_example in main.tf
 ```
 
 **Resources created:**
 - `aws_instance.passing_example` - t2.micro with all required tags
-- `aws_instance.passing_small` - t3.small with all required tags
+- `aws_instance.passing_small` - t3.small with all required tags (if create_passing_example=true)
 
 **Expected OPA Result:** ✅ **PASS** - All checks succeed
 
-### Scenario 2: Failing Configuration
+### Scenario 2: Failing Configuration (Default)
+
+By default, both passing and failing instances are created:
 
 ```hcl
-create_passing_example = false
-create_failing_example = true
+# Both resources are defined in main.tf
+aws_instance.passing_example  # ✅ Passes
+aws_instance.failing_example  # ❌ Fails
 ```
 
 **Resources created:**
+- `aws_instance.passing_example` - t2.micro with all required tags
 - `aws_instance.failing_example` - m5.xlarge (not allowed) and missing tags
 
 **Expected OPA Result:** ❌ **FAIL** with violations:
@@ -62,34 +67,42 @@ create_failing_example = true
 - Missing required tag: Owner
 - Missing required tag: Project
 
-### Scenario 3: Mixed Configuration
+### Scenario 3: Additional Resources
+
+Use variables to control additional test resources:
 
 ```hcl
-create_passing_example = true
-create_failing_example = true
+create_passing_example = true      # Creates aws_instance.passing_small
+create_additional_resources = true # Creates S3 buckets
 ```
 
-**Expected OPA Result:** ❌ **FAIL** - The failing resources will cause policy failure
+**Expected OPA Result:** Depends on which resources have violations
 
 ## Local Testing
 
-### Test Passing Scenario
+### Test Failing Scenario (Default)
 
 ```bash
 cd test-workspace
 
-# Option 1: Use default (passing only)
+# Default - includes both passing and failing instances
 terraform plan
-
-# Option 2: Explicit variables
-terraform plan -var="create_passing_example=true" -var="create_failing_example=false"
 ```
 
-### Test Failing Scenario
+### Test Passing Scenario Only
+
+To test only passing resources, you need to comment out the failing instance in `main.tf`:
 
 ```bash
-# Enable failing resources
-terraform plan -var="create_passing_example=false" -var="create_failing_example=true"
+# Edit main.tf and comment out aws_instance.failing_example
+terraform plan
+```
+
+### Test with Additional Resources
+
+```bash
+# Add more test resources
+terraform plan -var="create_passing_example=true" -var="create_additional_resources=true"
 ```
 
 ## HCP Terraform CLI Workflow
@@ -123,26 +136,11 @@ terraform init
 
 ### Run Plans with Policy Checks
 
-#### Test Passing Scenario
+#### Test Failing Scenario (Default)
 
 ```bash
-# Create only passing resources
-terraform plan -var="create_passing_example=true" -var="create_failing_example=false"
-```
-
-**Expected Output:**
-```
-Plan: 2 to add, 0 to change, 0 to destroy
-
-Policy check results:
-  ✅ opa-external-data-validation - passed
-```
-
-#### Test Failing Scenario
-
-```bash
-# Create failing resources
-terraform plan -var="create_passing_example=false" -var="create_failing_example=true"
+# Default plan includes both passing and failing instances
+terraform plan
 ```
 
 **Expected Output:**

@@ -68,16 +68,15 @@ Run the built-in unit tests:
 
 ```bash
 cd policy-set
-opa test policy/ -v
+opa test policies/ -v
 ```
 
 Expected output:
 ```
-policy/external_data_policy_test.rego:
-  data.terraform.policies.external_data.test_valid_configuration: PASS
-  data.terraform.policies.external_data.test_invalid_instance_type: PASS
-  data.terraform.policies.external_data.test_missing_required_tags: PASS
-  data.terraform.policies.external_data.test_violations_invalid_instance: PASS
+policies/external_data_policy_test.rego:
+  data.terraform.policies.external_data_policy.test_valid_configuration: PASS
+  data.terraform.policies.external_data_policy.test_invalid_instance_type: PASS
+  data.terraform.policies.external_data_policy.test_missing_required_tags: PASS
 ```
 
 ### Testing with Mock Data (Offline)
@@ -87,19 +86,19 @@ Test the policy with mock external data (no S3 call):
 ```bash
 # Test passing scenario
 opa eval \
-  --data policy/external_data_policy.rego \
+  --data policies/external_data_policy.rego \
   --data test-data/mock-external-data.json \
   --input test-data/passing-input.json \
   --format pretty \
-  'data.terraform.policies.external_data.policy_result'
+  'data.terraform.policies.external_data_policy.deny'
 
 # Test failing scenario
 opa eval \
-  --data policy/external_data_policy.rego \
+  --data policies/external_data_policy.rego \
   --data test-data/mock-external-data.json \
   --input test-data/failing-input.json \
   --format pretty \
-  'data.terraform.policies.external_data.policy_result'
+  'data.terraform.policies.external_data_policy.deny'
 ```
 
 ### Testing with Live S3 Data
@@ -109,17 +108,17 @@ Test the policy with actual external data from S3:
 ```bash
 # Evaluate passing scenario
 opa eval \
-  --data policy/external_data_policy.rego \
+  --data policies/external_data_policy.rego \
   --input test-data/passing-input.json \
   --format pretty \
-  'data.terraform.policies.external_data.policy_result'
+  'data.terraform.policies.external_data_policy.deny'
 
 # Evaluate failing scenario
 opa eval \
-  --data policy/external_data_policy.rego \
+  --data policies/external_data_policy.rego \
   --input test-data/failing-input.json \
   --format pretty \
-  'data.terraform.policies.external_data.policy_result'
+  'data.terraform.policies.external_data_policy.deny'
 ```
 
 ### Interactive Policy Development
@@ -127,13 +126,13 @@ opa eval \
 Start an interactive REPL for policy development:
 
 ```bash
-opa run policy/external_data_policy.rego test-data/mock-external-data.json
+opa run policies/external_data_policy.rego test-data/mock-external-data.json
 ```
 
 In the REPL, you can query the policy:
 ```
-> data.terraform.policies.external_data.external_data
-> data.terraform.policies.external_data.allow
+> data.terraform.policies.external_data_policy.external_data
+> data.terraform.policies.external_data_policy.deny
 ```
 
 ## HCP Terraform Integration
@@ -153,15 +152,22 @@ In the REPL, you can query the policy:
 
 3. **Upload Policy Files**:
    - Upload `policies.hcl`
-   - Upload the `policy/` directory with all `.rego` files
+   - Upload the `policies/` directory with all `.rego` files
 
 ### Policy Set Configuration
 
-The `policies.hcl` file defines the policy:
+The `policies.hcl` file defines the policies:
 
 ```hcl
-policy "external-data-validation" {
-  source            = "./policy/external_data_policy.rego"
+policy "instance_type_validation" {
+  description       = "Ensure that only allowed EC2 instance types are used"
+  query             = "data.terraform.policies.external_data_policy.instance_types_rule"
+  enforcement_level = "advisory"
+}
+
+policy "required_tags_validation" {
+  description       = "Ensure that all resources have required tags"
+  query             = "data.terraform.policies.external_data_policy.required_tags_rule"
   enforcement_level = "advisory"
 }
 ```
@@ -182,17 +188,26 @@ Replace with your actual S3 bucket URL from the infrastructure deployment.
 
 ## Policy Output
 
-The policy returns a structured result:
+The policy provides two main outputs:
 
+1. **`deny` set** - Contains violation messages:
+```json
+[
+  "Instance type 'm5.xlarge' for resource 'aws_instance.failing_example' is not in allowed list: [...]",
+  "Resource 'aws_instance.failing_example' is missing required tag: Owner"
+]
+```
+
+2. **`rule` set** - Contains structured violation details:
 ```json
 {
-  "allowed": true/false,
-  "violations": ["list of violation messages"],
-  "external_data_loaded": true/false,
-  "checks": {
-    "valid_instance_types": true/false,
-    "valid_regions": true/false,
-    "required_tags_present": true/false
+  "policy": "Instance Type Validation",
+  "description": "Found 1 resource(s) with invalid instance types...",
+  "severity": "high",
+  "resources": {
+    "count": 1,
+    "addresses": [...],
+    "details": [...]
   }
 }
 ```
@@ -201,12 +216,13 @@ The policy returns a structured result:
 
 ### External data not loading
 
-If `external_data_loaded` is `false`:
+If external data is not loading:
 
-1. Verify the S3 URL is correct
+1. Verify the S3 URL is correct in `external_data_policy.rego`
 2. Check that the S3 bucket allows public read access
 3. Test the URL manually: `curl https://your-bucket-url/data.json`
 4. Check HCP Terraform's network access to the S3 bucket
+5. Review OPA logs for HTTP request errors
 
 ### Policy always passes/fails
 

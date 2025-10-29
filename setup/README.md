@@ -34,16 +34,20 @@ To create a token:
 
 ### 2. Configure Variables
 
-Copy the example tfvars file:
+Set your organization name either via variable file or command line:
 
+**Option 1: Command line (recommended)**
 ```bash
-cp terraform.tfvars.example terraform.tfvars
+# No file needed, use -var flag
+terraform init
+terraform apply -var="organization_name=your-org-name"
 ```
 
-Edit `terraform.tfvars` and set your organization name:
-
-```hcl
+**Option 2: Create a terraform.tfvars file**
+```bash
+cat > terraform.tfvars << EOF
 organization_name = "your-org-name"
+EOF
 ```
 
 ### 3. Initialize Terraform

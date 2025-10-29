@@ -5,6 +5,8 @@ import future.keywords.if
 import future.keywords.in
 import input.plan as tfplan
 
+# Hardcoded for this example to a public address
+# AWS SigV4 -> https://www.openpolicyagent.org/docs/policy-reference/builtins/providers.aws#aws-request-signing-examples
 external_data_url := "https://opa-external-data-20251029174057804100000001.s3.us-east-1.amazonaws.com/data.json"
 
 # Fetch external data from S3
