@@ -5,14 +5,7 @@ import future.keywords.if
 import future.keywords.in
 import input.plan as tfplan
 
-# Configuration - External data URL from HCP Terraform policy set parameters
-# Falls back to default if not provided
-# default_external_data_url := "https://opa-external-data-20251029174057804100000001.s3.us-east-1.amazonaws.com/data.json"
-
-external_data_url := input.global.external_data_url
-# external_data_url := input.global.external_data_url if {
-#     input.global.external_data_url
-# } else := default_external_data_url
+external_data_url := "https://opa-external-data-20251029174057804100000001.s3.us-east-1.amazonaws.com/data.json"
 
 # Fetch external data from S3
 external_data := http.send({
