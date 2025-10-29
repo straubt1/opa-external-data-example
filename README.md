@@ -49,9 +49,20 @@ This repository demonstrates:
 │   │   ├── passing-input.json
 │   │   ├── failing-input.json
 │   │   └── mock-external-data.json
+│   ├── test.sh              # Automated testing script
 │   └── README.md
-└── test-workspace/          # Test Terraform configs (Phase 3 - TODO)
-    └── main.tf
+├── setup/                   # HCP Terraform setup (Phase 3 ✅)
+│   ├── main.tf              # Workspace and policy set creation
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── terraform.tfvars.example
+│   └── README.md
+└── test-workspace/          # Test Terraform configs (Phase 3 ✅)
+    ├── main.tf              # Passing and failing examples
+    ├── variables.tf
+    ├── outputs.tf
+    ├── terraform.tfvars.example
+    └── README.md
 ```
 
 ## Quick Start
@@ -133,9 +144,48 @@ The OPA policy is now ready and tested locally!
 
 See [policy-set/README.md](policy-set/README.md) for detailed documentation.
 
-### Phase 3: Test Workspace (TODO)
+### Phase 3: Test Workspace (Complete ✅)
 
-Coming soon: Example Terraform configurations demonstrating pass/fail scenarios.
+The test workspace demonstrates both passing and failing scenarios.
+
+#### Setup HCP Terraform Workspace
+
+1. Set your HCP Terraform token:
+
+   ```bash
+   export TFE_TOKEN="your-token"
+   ```
+
+2. Configure and create the workspace:
+
+   ```bash
+   cd setup
+   cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your organization name
+   terraform init
+   terraform apply
+   ```
+
+#### Test Locally
+
+```bash
+cd test-workspace
+
+# Test passing scenario
+terraform init
+terraform plan -var="create_failing_example=false"
+
+# Test failing scenario  
+terraform plan -var="create_failing_example=true"
+```
+
+#### Test in HCP Terraform
+
+1. Configure the cloud block in `test-workspace/main.tf`
+2. Run terraform init and plan
+3. Observe OPA policy evaluation
+
+See [test-workspace/README.md](test-workspace/README.md) for detailed testing scenarios.
 
 ## External Data Structure
 

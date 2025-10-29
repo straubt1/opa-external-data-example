@@ -52,8 +52,9 @@ OPA Version: 0.61.0
 
 **Requirements**:
 
-- Simple Terraform configuration to be run in HCP Terraform workspace
-- Two scenarios:
+- setup/ folder that will create the HCP Terraform workspace and project named "opa"
+- Simple Terraform configuration to be run in HCP Terraform workspace via the CLI workflow
+- Two scenarios in one file:
   - **Pass scenario**: Configuration that complies with OPA policy
   - **Fail scenario**: Configuration that violates OPA policy
 - Clear documentation of what makes each scenario pass/fail
@@ -119,11 +120,12 @@ OPA Version: 0.61.0
 3. ✅ Define policy rules based on external data
 4. ✅ Create local test cases
 
-### Phase 3: Test Configuration
+### Phase 3: Test Configuration ✅ COMPLETE
 
-1. Create passing Terraform example
-2. Create failing Terraform example
-3. Document expected behavior
+1. ✅ Create setup folder for HCP Terraform workspace and project
+2. ✅ Create passing Terraform example
+3. ✅ Create failing Terraform example
+4. ✅ Document expected behavior
 
 ### Phase 4: Integration & Documentation
 
@@ -159,11 +161,14 @@ OPA Version: 0.61.0
 - [x] S3 bucket deployed and JSON file publicly accessible
 - [x] OPA policy successfully fetches external data
 - [x] Policy can be tested locally with OPA CLI
-- [ ] Pass scenario succeeds in HCP Terraform
-- [ ] Fail scenario fails in HCP Terraform with clear error message
+- [x] Setup configuration for HCP Terraform workspace created
+- [x] Test workspace with pass/fail scenarios created
+- [ ] Tested in HCP Terraform with passing scenario
+- [ ] Tested in HCP Terraform with failing scenario
 - [x] Infrastructure documented in README
 - [x] Policy documented in policy-set/README
-- [ ] Complete end-to-end documentation
+- [x] Test workspace documented
+- [ ] Complete end-to-end HCP Terraform integration documentation
 - [ ] All components documented in main README
 
 ## Future Enhancements (Optional)
