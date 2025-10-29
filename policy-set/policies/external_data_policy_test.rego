@@ -24,125 +24,111 @@ mock_external_data := {
     ]
 }
 
-# Test: Valid configuration should pass
+# Test: Valid configuration should have no violations
 test_valid_configuration if {
-    allow with input as mock_passing_input
+    count(rule) == 0 with input as mock_passing_input
         with external_data as mock_external_data
 }
 
-# Test: Invalid instance type should fail
+# Test: Invalid instance type should create violation
 test_invalid_instance_type if {
-    not allow with input as mock_invalid_instance_type_input
+    count(instance_types_rule) > 0 with input as mock_invalid_instance_type_input
         with external_data as mock_external_data
 }
 
-# Test: Missing required tags should fail
+# Test: Missing required tags should create violation
 test_missing_required_tags if {
-    not allow with input as mock_missing_tags_input
+    count(required_tags_rule) > 0 with input as mock_missing_tags_input
         with external_data as mock_external_data
 }
 
-# Test: Violations should be populated for invalid instance type
+# Test: Violations should be detailed for invalid instance type
 test_violations_invalid_instance if {
-    count(violations) > 0 with input as mock_invalid_instance_type_input
+    violations := instance_types_rule with input as mock_invalid_instance_type_input
         with external_data as mock_external_data
+    count(violations) == 1
+    violations[_].policy == "Instance Type Validation"
+    violations[_].resources.count == 1
 }
 
-# Test: Debug external data loads correctly
-test_debug_external_data if {
-    debug_external_data with external_data as mock_external_data
-}
-
-# Test: Debug results are generated
-test_debug_results if {
-    debug_results with input as mock_passing_input
+# Test: Violations should be detailed for missing tags
+test_violations_missing_tags if {
+    violations := required_tags_rule with input as mock_missing_tags_input
         with external_data as mock_external_data
+    count(violations) == 1
+    violations[_].policy == "Required Tags Validation"
+    violations[_].resources.count == 1
 }
 
 # Mock input - Passing scenario
 mock_passing_input := {
-    "planned_values": {
-        "root_module": {
-            "resources": [
-                {
-                    "address": "aws_instance.example",
-                    "type": "aws_instance",
-                    "name": "example",
-                    "values": {
+    "plan": {
+        "resource_changes": [
+            {
+                "address": "aws_instance.example",
+                "type": "aws_instance",
+                "name": "example",
+                "mode": "managed",
+                "change": {
+                    "actions": ["create"],
+                    "after": {
                         "instance_type": "t2.micro",
                         "tags": {
                             "Environment": "dev",
                             "Owner": "team-a",
                             "Project": "demo"
                         }
-                    },
-                    "provider_config": {
-                        "expressions": {
-                            "region": {
-                                "constant_value": "us-east-1"
-                            }
-                        }
                     }
                 }
-            ]
-        }
+            }
+        ]
     }
 }
 
 # Mock input - Invalid instance type
 mock_invalid_instance_type_input := {
-    "planned_values": {
-        "root_module": {
-            "resources": [
-                {
-                    "address": "aws_instance.invalid",
-                    "type": "aws_instance",
-                    "name": "invalid",
-                    "values": {
+    "plan": {
+        "resource_changes": [
+            {
+                "address": "aws_instance.invalid",
+                "type": "aws_instance",
+                "name": "invalid",
+                "mode": "managed",
+                "change": {
+                    "actions": ["create"],
+                    "after": {
                         "instance_type": "m5.large",
                         "tags": {
                             "Environment": "dev",
                             "Owner": "team-a",
                             "Project": "demo"
                         }
-                    },
-                    "provider_config": {
-                        "expressions": {
-                            "region": {
-                                "constant_value": "us-east-1"
-                            }
-                        }
                     }
                 }
-            ]
-        }
+            }
+        ]
     }
 }
 
 # Mock input - Missing required tags
 mock_missing_tags_input := {
-    "planned_values": {
-        "root_module": {
-            "resources": [
-                {
-                    "address": "aws_instance.missing_tags",
-                    "type": "aws_instance",
-                    "name": "missing_tags",
-                    "values": {
+    "plan": {
+        "resource_changes": [
+            {
+                "address": "aws_instance.missing_tags",
+                "type": "aws_instance",
+                "name": "missing_tags",
+                "mode": "managed",
+                "change": {
+                    "actions": ["create"],
+                    "after": {
                         "instance_type": "t2.micro",
                         "tags": {
                             "Environment": "dev"
                         }
-                    },
-                    "provider_config": {
-                        "expressions": {
-                            "region": {
-                                "constant_value": "us-east-1"
-                            }
-                        }
                     }
                 }
-            ]
-        }
+            }
+        ]
     }
 }

@@ -3,6 +3,7 @@ package terraform.policies.external_data_policy
 import future.keywords.contains
 import future.keywords.if
 import future.keywords.in
+import input.plan as tfplan
 
 # Configuration - Update this URL with your S3 bucket URL
 external_data_url := "https://opa-external-data-20251029174057804100000001.s3.us-east-1.amazonaws.com/data.json"
@@ -15,103 +16,123 @@ external_data := http.send({
     "raise_error": false,
 }).body
 
-# Debug: Print external data status
-debug_external_data := true {
-    print("External data loaded:", external_data != null)
-    print("External data content:", external_data)
-}
+# Actions to consider for policy evaluation
+actions := [
+    ["no-op"],
+    ["create"],
+    ["update"],
+]
 
-# Default policy evaluation results
-default allow := false
-default valid_instance_types := false
-default valid_regions := false
-default required_tags_present := false
-
-# Main policy decision
-allow if {
-    print("Checking policy conditions:")
-    print("  valid_instance_types:", valid_instance_types)
-    print("  valid_regions:", valid_regions)
-    print("  required_tags_present:", required_tags_present)
-    valid_instance_types
-    valid_regions
-    required_tags_present
-}
-
-# Check if instance types are in the allowed list
-valid_instance_types if {
-    count(violation_instance_types) == 0
-}
-
-violation_instance_types contains resource if {
-    some resource in resources_by_type("aws_instance")
-    not resource.values.instance_type in external_data.allowed_instance_types
-}
-
-# Check if resources are being created in allowed regions
-valid_regions if {
-    count(violation_regions) == 0
-}
-
-violation_regions contains resource if {
-    some resource in all_resources
-    resource.provider_config.expressions.region.constant_value
-    region := resource.provider_config.expressions.region.constant_value
-    not region in external_data.allowed_regions
-}
-
-# Check if required tags are present on all resources that support tags
-required_tags_present if {
-    count(violation_missing_tags) == 0
-}
-
-violation_missing_tags contains msg if {
-    some resource in taggable_resources
-    some required_tag in external_data.required_tags
-    not required_tag in object.keys(resource.values.tags)
-    msg := sprintf("Resource %s is missing required tag: %s", [resource.address, required_tag])
-}
-
-# Helper functions
+# Helper functions to get resources
 resources_by_type(type) := [resource |
-    some resource in input.planned_values.root_module.resources
+    some resource in tfplan.resource_changes
     resource.type == type
+    resource.mode == "managed"
+    resource.change.actions in actions
 ]
 
-all_resources := input.planned_values.root_module.resources
-
-taggable_resources := [resource |
-    some resource in all_resources
-    resource.values.tags
+all_taggable_resources := [resource |
+    some resource in tfplan.resource_changes
+    resource.mode == "managed"
+    resource.change.actions in actions
+    resource.change.after.tags
 ]
 
-# Policy violations for reporting
-violations contains msg if {
-    some resource in violation_instance_types
-    msg := sprintf("Instance type '%s' for resource '%s' is not in the allowed list: %v", 
-        [resource.values.instance_type, resource.address, external_data.allowed_instance_types])
+# Instance type violations
+instance_type_violations := [resource |
+    some resource in resources_by_type("aws_instance")
+    not resource.change.after.instance_type in external_data.allowed_instance_types
+]
+
+instance_type_violators[address] {
+    address := instance_type_violations[_].address
 }
 
-violations contains msg if {
-    some resource in violation_regions
-    region := resource.provider_config.expressions.region.constant_value
-    msg := sprintf("Region '%s' for resource '%s' is not in the allowed list: %v", 
-        [region, resource.address, external_data.allowed_regions])
+# Missing required tags violations
+missing_tags_violations := [violation |
+    some resource in all_taggable_resources
+    some required_tag in external_data.required_tags
+    not required_tag in object.keys(resource.change.after.tags)
+    violation := {
+        "address": resource.address,
+        "missing_tag": required_tag,
+    }
+]
+
+missing_tags_violators[address] {
+    address := missing_tags_violations[_].address
 }
 
-violations contains msg if {
-    some msg in violation_missing_tags
+# METADATA
+# title: External Data Validation
+# description: Validates AWS resources against external data policy requirements
+# custom:
+#  severity: high
+#  enforcement_level: mandatory
+# related_resources:
+# - ref: https://github.com/straubt1/opa-external-data-example
+# authors:
+# - name: Tom Straub
+# organizations:
+# - HashiCorp
+
+# Instance Type Policy Rule
+instance_types_rule[result] {
+    count(instance_type_violations) != 0
+    result := {
+        "policy": "Instance Type Validation",
+        "description": sprintf("Found %d resource(s) with invalid instance types. Allowed types: %v", 
+            [count(instance_type_violations), external_data.allowed_instance_types]),
+        "severity": "high",
+        "resources": {
+            "count": count(instance_type_violations),
+            "addresses": instance_type_violators,
+            "details": [detail |
+                some resource in instance_type_violations
+                detail := {
+                    "address": resource.address,
+                    "instance_type": resource.change.after.instance_type,
+                    "allowed_types": external_data.allowed_instance_types,
+                }
+            ],
+        },
+    }
 }
 
-# Debug: Print final results
-debug_results := true {
-    print("Policy evaluation complete:")
-    print("  allow:", allow)
-    print("  violation count:", count(violations))
-    print("  violations:", violations)
+# Required Tags Policy Rule
+required_tags_rule[result] {
+    count(missing_tags_violations) != 0
+    result := {
+        "policy": "Required Tags Validation",
+        "description": sprintf("Found %d resource(s) missing required tags. Required tags: %v", 
+            [count(missing_tags_violators), external_data.required_tags]),
+        "severity": "high",
+        "resources": {
+            "count": count(missing_tags_violators),
+            "addresses": missing_tags_violators,
+            "details": missing_tags_violations,
+        },
+    }
 }
 
-# Policy evaluation result - must be an array for Terraform Cloud
-# When policy passes (allow is true), return empty array
-# When policy fails (allow is false), return array of violations
-policy_result := violations
+# Combined rule result - returns violation details or empty set
+rule[result] {
+    result := instance_types_rule[_]
+}
+
+rule[result] {
+    result := required_tags_rule[_]
+}
+
+# Deny rule - returns error messages (alternative format for simpler policies)
+deny contains msg {
+    some resource in instance_type_violations
+    msg := sprintf("Instance type '%s' for resource '%s' is not in allowed list: %v",
+        [resource.change.after.instance_type, resource.address, external_data.allowed_instance_types])
+}
+
+deny contains msg {
+    some violation in missing_tags_violations
+    msg := sprintf("Resource '%s' is missing required tag: %s",
+        [violation.address, violation.missing_tag])
+}

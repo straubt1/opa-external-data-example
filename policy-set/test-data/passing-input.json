@@ -1,12 +1,15 @@
 {
-  "planned_values": {
-    "root_module": {
-      "resources": [
-        {
-          "address": "aws_instance.passing_example",
-          "type": "aws_instance",
-          "name": "passing_example",
-          "values": {
+  "plan": {
+    "resource_changes": [
+      {
+        "address": "aws_instance.passing_example",
+        "type": "aws_instance",
+        "name": "passing_example",
+        "mode": "managed",
+        "change": {
+          "actions": ["create"],
+          "before": null,
+          "after": {
             "ami": "ami-0c55b159cbfafe1f0",
             "instance_type": "t2.micro",
             "tags": {
@@ -14,16 +17,10 @@
               "Owner": "platform-team",
               "Project": "opa-demo"
             }
-          },
-          "provider_config": {
-            "expressions": {
-              "region": {
-                "constant_value": "us-east-1"
-              }
-            }
           }
-        }
-      ]
-    }
+        },
+        "provider_name": "registry.terraform.io/hashicorp/aws"
+      }
+    ]
   }
 }
