@@ -34,16 +34,21 @@ This repository demonstrates:
 ├── README.md                 # This file
 ├── SPEC.md                   # Detailed specification
 ├── LICENSE
-├── infrastructure/           # S3 bucket setup (Phase 1 - Complete)
+├── infrastructure/           # S3 bucket setup (Phase 1 ✅)
 │   ├── main.tf              # Main Terraform configuration
 │   ├── variables.tf         # Input variables
 │   ├── outputs.tf           # Output values
 │   ├── data.json            # External data file
 │   └── README.md            # Infrastructure documentation
-├── policy-set/              # OPA policies (Phase 2 - TODO)
+├── policy-set/              # OPA policies (Phase 2 ✅)
 │   ├── policies.hcl         # Sentinel Policy Set configuration
 │   ├── policy/
-│   │   └── external_data_policy.rego
+│   │   ├── external_data_policy.rego      # Main OPA policy
+│   │   └── external_data_policy_test.rego # Unit tests
+│   ├── test-data/           # Sample test data
+│   │   ├── passing-input.json
+│   │   ├── failing-input.json
+│   │   └── mock-external-data.json
 │   └── README.md
 └── test-workspace/          # Test Terraform configs (Phase 3 - TODO)
     └── main.tf
@@ -51,38 +56,82 @@ This repository demonstrates:
 
 ## Quick Start
 
-### Phase 1: Deploy Infrastructure (Complete ✓)
+### Phase 1: Deploy Infrastructure (Complete ✅)
 
 1. Navigate to the infrastructure directory:
+
    ```bash
    cd infrastructure
    ```
 
 2. Initialize Terraform:
+
    ```bash
    terraform init
    ```
 
 3. Deploy the S3 bucket:
+
    ```bash
    terraform apply
    ```
 
 4. Note the output URL where the JSON file is accessible:
+
    ```bash
    terraform output data_file_url
    ```
 
 5. Verify public access:
+
    ```bash
    curl $(terraform output -raw data_file_url)
    ```
 
 See [infrastructure/README.md](infrastructure/README.md) for detailed documentation.
 
-### Phase 2: OPA Policy Development (TODO)
+### Phase 2: OPA Policy Development (Complete ✅)
 
-Coming soon: OPA policy that fetches data from S3 and enforces rules.
+The OPA policy is now ready and tested locally!
+
+1. Install OPA 0.61.0:
+
+   ```bash
+   # Download OPA
+   mkdir -p ~/bin
+   curl -L -o ~/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.61.0/opa_darwin_amd64
+   chmod +x ~/bin/opa
+   ```
+
+2. Run unit tests:
+
+   ```bash
+   cd policy-set
+   ~/bin/opa test policy/ -v
+   ```
+
+3. Test with mock data (offline):
+
+   ```bash
+   ~/bin/opa eval \
+     --data policy/external_data_policy.rego \
+     --data test-data/mock-external-data.json \
+     --input test-data/passing-input.json \
+     --format pretty \
+     'data.terraform.policies.external_data.policy_result'
+   ```
+
+4. Test with live S3 data:
+
+   ```bash
+   ~/bin/opa eval \
+     --data policy/external_data_policy.rego \
+     --input test-data/passing-input.json \
+     --format pretty \
+     'data.terraform.policies.external_data.policy_result'
+   ```
+
+See [policy-set/README.md](policy-set/README.md) for detailed documentation.
 
 ### Phase 3: Test Workspace (TODO)
 

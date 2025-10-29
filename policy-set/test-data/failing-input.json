@@ -1,0 +1,27 @@
+{
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_instance.failing_example",
+          "type": "aws_instance",
+          "name": "failing_example",
+          "values": {
+            "ami": "ami-0c55b159cbfafe1f0",
+            "instance_type": "m5.xlarge",
+            "tags": {
+              "Environment": "production"
+            }
+          },
+          "provider_config": {
+            "expressions": {
+              "region": {
+                "constant_value": "us-east-1"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

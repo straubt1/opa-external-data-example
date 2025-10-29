@@ -4,6 +4,8 @@
 
 This repository demonstrates how to use Open Policy Agent (OPA) with external data sources in HCP Terraform (Terraform Cloud). The example shows how to fetch data from an external REST API (AWS S3) and use it within OPA policies for policy-based governance.
 
+OPA Version: 0.61.0
+
 ## Components
 
 ### 1. Infrastructure Setup (AWS S3)
@@ -110,12 +112,12 @@ This repository demonstrates how to use Open Policy Agent (OPA) with external da
 3. ✅ Configure bucket policy for public access
 4. ⏳ Deploy and verify public accessibility (ready to deploy)
 
-### Phase 2: OPA Policy Development
+### Phase 2: OPA Policy Development ✅ COMPLETE
 
-1. Write basic OPA policy structure
-2. Implement external data fetching using `http.send()`
-3. Define policy rules based on external data
-4. Create local test cases
+1. ✅ Write basic OPA policy structure
+2. ✅ Implement external data fetching using `http.send()`
+3. ✅ Define policy rules based on external data
+4. ✅ Create local test cases
 
 ### Phase 3: Test Configuration
 
@@ -154,12 +156,13 @@ This repository demonstrates how to use Open Policy Agent (OPA) with external da
 ## Success Criteria
 
 - [x] S3 bucket Terraform configuration created
-- [ ] S3 bucket deployed and JSON file publicly accessible (ready to deploy)
-- [ ] OPA policy successfully fetches external data
-- [ ] Policy can be tested locally with OPA CLI
+- [x] S3 bucket deployed and JSON file publicly accessible
+- [x] OPA policy successfully fetches external data
+- [x] Policy can be tested locally with OPA CLI
 - [ ] Pass scenario succeeds in HCP Terraform
 - [ ] Fail scenario fails in HCP Terraform with clear error message
 - [x] Infrastructure documented in README
+- [x] Policy documented in policy-set/README
 - [ ] Complete end-to-end documentation
 - [ ] All components documented in main README
 
