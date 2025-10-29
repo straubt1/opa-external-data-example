@@ -1,4 +1,4 @@
-package terraform.policies.external_data
+package terraform.policies.external_data_policy
 
 import future.keywords.contains
 import future.keywords.if
