@@ -9,13 +9,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Check if OPA is available
-if ! command -v opa &> /dev/null && ! [ -f ~/bin/opa ]; then
+if command -v opa &> /dev/null; then
+    OPA_CMD="opa"
+elif [ -f "$HOME/bin/opa" ]; then
+    OPA_CMD="$HOME/bin/opa"
+elif [ -f ~/bin/opa ]; then
+    OPA_CMD=~/bin/opa
+else
     echo "Error: OPA not found. Please install OPA first."
-    echo "Run: curl -L -o ~/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.61.0/opa_darwin_amd64 && chmod +x ~/bin/opa"
+    echo "Run: curl -L -o $HOME/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.61.0/opa_darwin_amd64 && chmod +x $HOME/bin/opa"
     exit 1
 fi
-
-OPA_CMD="${OPA_PATH:-~/bin/opa}"
 
 echo "========================================="
 echo "OPA Policy Testing"
@@ -25,7 +29,7 @@ echo ""
 # Function to run tests
 run_tests() {
     echo "Running unit tests..."
-    $OPA_CMD test policy/ -v
+    $OPA_CMD test policies/ -v
     echo ""
 }
 
@@ -33,22 +37,22 @@ run_tests() {
 test_mock_passing() {
     echo "Testing with mock data (passing scenario)..."
     $OPA_CMD eval \
-        --data policy/external_data_policy.rego \
+        --data policies/external_data_policy.rego \
         --data test-data/mock-external-data.json \
         --input test-data/passing-input.json \
         --format pretty \
-        'data.terraform.policies.external_data.policy_result'
+        'data.terraform.policies.external_data_policy.policy_result'
     echo ""
 }
 
 test_mock_failing() {
     echo "Testing with mock data (failing scenario)..."
     $OPA_CMD eval \
-        --data policy/external_data_policy.rego \
+        --data policies/external_data_policy.rego \
         --data test-data/mock-external-data.json \
         --input test-data/failing-input.json \
         --format pretty \
-        'data.terraform.policies.external_data.policy_result'
+        'data.terraform.policies.external_data_policy.policy_result'
     echo ""
 }
 
@@ -56,20 +60,20 @@ test_mock_failing() {
 test_live_passing() {
     echo "Testing with live S3 data (passing scenario)..."
     $OPA_CMD eval \
-        --data policy/external_data_policy.rego \
+        --data policies/external_data_policy.rego \
         --input test-data/passing-input.json \
         --format pretty \
-        'data.terraform.policies.external_data.policy_result'
+        'data.terraform.policies.external_data_policy.policy_result'
     echo ""
 }
 
 test_live_failing() {
     echo "Testing with live S3 data (failing scenario)..."
     $OPA_CMD eval \
-        --data policy/external_data_policy.rego \
+        --data policies/external_data_policy.rego \
         --input test-data/failing-input.json \
         --format pretty \
-        'data.terraform.policies.external_data.policy_result'
+        'data.terraform.policies.external_data_policy.policy_result'
     echo ""
 }
 
@@ -77,9 +81,9 @@ test_live_failing() {
 show_external_data() {
     echo "Fetching external data from S3..."
     $OPA_CMD eval \
-        --data policy/external_data_policy.rego \
+        --data policies/external_data_policy.rego \
         --format pretty \
-        'data.terraform.policies.external_data.external_data'
+        'data.terraform.policies.external_data_policy.external_data'
     echo ""
 }
 

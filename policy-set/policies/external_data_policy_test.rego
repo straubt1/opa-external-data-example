@@ -48,6 +48,17 @@ test_violations_invalid_instance if {
         with external_data as mock_external_data
 }
 
+# Test: Debug external data loads correctly
+test_debug_external_data if {
+    debug_external_data with external_data as mock_external_data
+}
+
+# Test: Debug results are generated
+test_debug_results if {
+    debug_results with input as mock_passing_input
+        with external_data as mock_external_data
+}
+
 # Mock input - Passing scenario
 mock_passing_input := {
     "planned_values": {

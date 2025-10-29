@@ -28,8 +28,6 @@ provider "aws" {
 #############################################################################
 
 resource "aws_instance" "passing_example" {
-  count = var.create_passing_example ? 1 : 0
-
   ami           = var.ami_id
   instance_type = "t2.micro" # ✅ Allowed instance type
 
@@ -50,8 +48,6 @@ resource "aws_instance" "passing_example" {
 #############################################################################
 
 resource "aws_instance" "failing_example" {
-  count = var.create_failing_example ? 1 : 0
-
   ami           = var.ami_id
   instance_type = "m5.xlarge" # ❌ NOT in allowed instance types
 
