@@ -15,6 +15,12 @@ external_data := http.send({
     "raise_error": false,
 }).body
 
+# Debug: Print external data status
+debug_external_data := true {
+    print("External data loaded:", external_data != null)
+    print("External data content:", external_data)
+}
+
 # Default policy evaluation results
 default allow := false
 default valid_instance_types := false
@@ -23,6 +29,10 @@ default required_tags_present := false
 
 # Main policy decision
 allow if {
+    print("Checking policy conditions:")
+    print("  valid_instance_types:", valid_instance_types)
+    print("  valid_regions:", valid_regions)
+    print("  required_tags_present:", required_tags_present)
     valid_instance_types
     valid_regions
     required_tags_present
@@ -91,6 +101,14 @@ violations contains msg if {
 
 violations contains msg if {
     some msg in violation_missing_tags
+}
+
+# Debug: Print final results
+debug_results := true {
+    print("Policy evaluation complete:")
+    print("  allow:", allow)
+    print("  violation count:", count(violations))
+    print("  violations:", violations)
 }
 
 # Policy evaluation result - must be an array for Terraform Cloud
