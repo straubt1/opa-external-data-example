@@ -93,14 +93,7 @@ violations contains msg if {
     some msg in violation_missing_tags
 }
 
-# Policy evaluation result
-policy_result := {
-    "allowed": allow,
-    "violations": violations,
-    "external_data_loaded": external_data != null,
-    "checks": {
-        "valid_instance_types": valid_instance_types,
-        "valid_regions": valid_regions,
-        "required_tags_present": required_tags_present,
-    }
-}
+# Policy evaluation result - must be an array for Terraform Cloud
+# When policy passes (allow is true), return empty array
+# When policy fails (allow is false), return array of violations
+policy_result := violations
